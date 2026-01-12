@@ -52,10 +52,23 @@ connectDB();
 app.use('/api/auth', authRoutes);
 
 // Programamos el job para que se ejecute a las 00:00 horas del 7 de cada mes
-cron.schedule('0 0 7 * *', () => {
-  console.log('Ejecutando el job para archivar tareas...');
-  archiveOldTasks(); // Llamamos a la función que archiva las tareas
-});
+const runArchiveIfDay7 = async () => {
+  // Hora Colombia
+  const now = new Date(
+    new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
+  );
+
+  // 🔧 FORZAMOS el día SOLO PARA PRUEBA
+  const day = 7; // ← hoy lo forzamos
+
+  if (day !== 7) return;
+
+  console.log('PRUEBA LOCAL: ejecutando archivado como si fuera día 7');
+  await archiveOldTasks();
+};
+
+// apenas arranca el server
+runArchiveIfDay7();
 
 
 // ---comentado para subir a vercel separado
