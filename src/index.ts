@@ -52,23 +52,34 @@ connectDB();
 app.use('/api/auth', authRoutes);
 
 // Programamos el job para que se ejecute a las 00:00 horas del 7 de cada mes
+let lastRunMonth: string | null = null; 
+
 const runArchiveIfDay7 = async () => {
-  // Hora Colombia
+  // Hora Colombia 🇨🇴
   const now = new Date(
     new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })
   );
 
-  // 🔧 FORZAMOS el día SOLO PARA PRUEBA
-  const day = 7; // ← hoy lo forzamos
+  const day = now.getDate(); // día del mes
+  const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`; // ej: 2026-1
 
+  // 👉 solo día 7
   if (day !== 7) return;
 
-  console.log('PRUEBA LOCAL: ejecutando archivado como si fuera día 7');
+  // 👉 solo una vez por mes
+  if (lastRunMonth === monthKey) {
+    return;
+  }
+
+  console.log('Hoy es 7, ejecutando archivado...');
   await archiveOldTasks();
+
+  lastRunMonth = monthKey;
 };
 
 // apenas arranca el server
 runArchiveIfDay7();
+
 
 
 // ---comentado para subir a vercel separado
