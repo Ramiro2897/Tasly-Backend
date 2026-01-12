@@ -42,15 +42,16 @@ export const updateTask = async (req: Request, res: Response): Promise<Response>
 
     // Verificamos si la tarea pertenece al usuario y si está completada
     const taskResult: QueryResult = await pool.query(
-      'SELECT complete FROM tasks WHERE id = $1 AND user_id = $2',
+      'SELECT status FROM tasks WHERE id = $1 AND user_id = $2',
       [taskId, user.id]
     );
+
 
     if (taskResult.rows.length === 0) {
       return res.status(404).json({ errors: { errorUpdate: 'La tarea no pertenece al usuario.' } });
     }
 
-    if (taskResult.rows[0].complete) {
+    if (taskResult.rows[0].status === 'completed') {
       return res.status(400).json({ errors: { errorUpdate: 'No puedes actualizar una tarea completada.' } });
     }
 

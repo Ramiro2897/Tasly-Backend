@@ -115,7 +115,6 @@ router.delete('/deleteGoal', verifyToken, async (req, res) => {
 
 // ruta para actualizar una tarea
 router.put('/taskUpdate', verifyToken, async (req, res) => {
-  console.log('entra aquiiiiii');
   await updateTask(req, res);
 });
 

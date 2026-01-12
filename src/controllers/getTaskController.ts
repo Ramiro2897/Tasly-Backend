@@ -11,7 +11,7 @@ export const getTasks = async (req: Request, res: Response): Promise<Response> =
     }
 
     const result = await pool.query(
-      'SELECT id, task_name, complete, created_at FROM tasks WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+      'SELECT id, task_name, status, created_at FROM tasks WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
       [user.id]
     );
     
