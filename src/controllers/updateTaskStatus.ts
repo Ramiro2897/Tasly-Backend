@@ -10,23 +10,31 @@ export const updateTaskStatus = async (req: Request, res: Response): Promise<Res
     }
 
     const taskId = req.headers['task-id']; 
-    const complete = req.headers['complete'];
-    const completeBool = complete === 'true'; // Esto convertirá "true" a true, y "false" a false
-    // console.log('actualizar', taskId, completeBool);
+    const status = req.headers['status'];
+
+    console.log('actualizar', taskId, status);
 
     // Validamos que el taskId y complete estén presentes
-    if (!taskId || typeof completeBool  !== 'boolean') {
+    if (!taskId || typeof status  !== 'string') {
       return res.status(400).json({
         errors: { 
-          general: 'Error inesperado.'
+          general: 'Datos inválidos.'
         }
+      });
+    }
+
+     // validamos estados permitidos
+    const allowedStatus = ['pending', 'in_progress', 'completed'];
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({
+        errors: { general: 'Estado no válido.' }
       });
     }
 
     // Realizamos la actualización en la base de datos
     const result = await pool.query(
-      'UPDATE tasks SET complete = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
-      [completeBool, taskId]
+      'UPDATE tasks SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [status, taskId]
     );
 
     // Si no se encuentra la tarea

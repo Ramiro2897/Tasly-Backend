@@ -37,8 +37,9 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
       `
       SELECT
         COUNT(*) AS total,
-        COUNT(*) FILTER (WHERE complete = false) AS pending,
-        COUNT(*) FILTER (WHERE complete = true) AS completed
+        COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+        COUNT(*) FILTER (WHERE status = 'in_progress') AS in_progress,
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed
       FROM tasks
       WHERE user_id = $1
         AND archived = false
@@ -53,6 +54,7 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
     return res.status(200).json({
       total: Number(summary.total),
       pending: Number(summary.pending),
+      inProgress: Number(summary.in_progress),
       completed: Number(summary.completed),
     });
   } catch (error) {
