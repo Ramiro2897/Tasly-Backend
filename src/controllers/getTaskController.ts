@@ -50,6 +50,7 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
     );
 
     const summary = result.rows[0];
+    console.log('objeto summary', summary)
 
     return res.status(200).json({
       total: Number(summary.total),
