@@ -43,8 +43,8 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
       FROM tasks
       WHERE user_id = $1
         AND archived = false
-        AND start_date <= CURRENT_DATE
-        AND end_date >= CURRENT_DATE
+        AND start_date <= (NOW() AT TIME ZONE 'America/Bogota')::date
+        AND end_date >= (NOW() AT TIME ZONE 'America/Bogota')::date;
       `,
       [user.id]
     );
