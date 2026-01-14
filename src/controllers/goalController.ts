@@ -50,7 +50,7 @@ export const createGoal = async (req: Request, res: Response): Promise<Response>
   // ✅ NUEVO: comparaciones directas de strings YYYY-MM-DD
   // Esto evita problemas de timezone en prod
   if (startDate < today) {
-    console.log('Error: Fecha de inicio en el pasado:', startDate);
+    console.log('Error: Fecha de inicio en el pasado:', startDate, today);
     return res.status(400).json({ errors: { date: 'La fecha de inicio no puede ser en el pasado.' } });
   }
 
