@@ -13,11 +13,24 @@ export const createGoal = async (req: Request, res: Response): Promise<Response>
 
   // ----------------------------
   // Obtener la fecha actual en formato YYYY-MM-DD en la zona horaria de Colombia
-  const today = new Date().toLocaleDateString('es-CO', {
+  function getTodayInTimezone(timeZone: string): string {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', { // YYYY-MM-DD
+    timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).split('/').reverse().join('-'); // YYYY-MM-DD
+  }).formatToParts(now);
+
+  const year = parts.find(p => p.type === 'year')!.value;
+  const month = parts.find(p => p.type === 'month')!.value;
+  const day = parts.find(p => p.type === 'day')!.value;
+
+  return `${year}-${month}-${day}`;
+  }
+
+  const today = getTodayInTimezone('America/Bogota'); // Colombia
+
   // ----------------------------
 
   if (!goal || goal.trim() === '') {
