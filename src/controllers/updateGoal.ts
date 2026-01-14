@@ -87,7 +87,7 @@ export const advanceGoal = async (req: Request, res: Response) => {
     }
 
     // Actualizar el valor de la meta
-    await pool.query("UPDATE goals SET current_value = $1 WHERE id = $2", [numericValue, goalId]);
+    await pool.query("UPDATE goals SET current_value = $1, updated_at = NOW() WHERE id = $2", [numericValue, goalId]);
 
     res.json({ message: "Avance actualizado correctamente." });
   } catch (error) {
