@@ -113,19 +113,31 @@ backend/
 * **GET** `/loadTasks`
 * **Headers:** `Authorization: Bearer <token>`
 * **Response:** Lista de tareas del usuario
-
+  
 ### Actualizar estado de tarea
 
-* **PUT** `/updateTask`
-* **Headers:** `Authorization: Bearer <token>`
-* **Body:**
+- **PUT** `/updateTask`
+- **Headers:** 
+  - `Authorization: Bearer <token>`
+  - `task-id: <ID de la tarea>`
+  - `status: pending | in_progress | completed`
+- **Response:** 200 OK + tarea actualizada
+
+### Actualizar tarea (otros campos)
+
+- **PUT** `/taskUpdate`
+- **Headers:** `Authorization: Bearer <token>`
+- **Body:** Todos los campos que se pueden modificar, por ejemplo:
 
 ```json
 {
   "taskId": 1,
-  "completed": true
+  "title": "Nuevo título",
+  "description": "Nueva descripción"
 }
-```
+````
+
+* **Response:** 200 OK + tarea actualizada
 
 ### Actualizar tarea
 
