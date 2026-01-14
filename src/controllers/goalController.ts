@@ -11,14 +11,14 @@ export const createGoal = async (req: Request, res: Response): Promise<Response>
   const { goal, description, startDate, endDate, unit} = req.body;
   console.log('Datos recibidos:', req.body);
 
+  // ----------------------------
   // Obtener la fecha actual en formato YYYY-MM-DD en la zona horaria de Colombia
   const today = new Date().toLocaleDateString('es-CO', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).split('/').reverse().join('-');
-
-  // console.log('Fecha actual en Colombia:', today);
+  }).split('/').reverse().join('-'); // YYYY-MM-DD
+  // ----------------------------
 
   if (!goal || goal.trim() === '') {
     console.log('Error: El nombre de la meta está vacío');
@@ -46,29 +46,32 @@ export const createGoal = async (req: Request, res: Response): Promise<Response>
     return res.status(400).json({ errors: { date: 'Las fechas de inicio y fin son obligatorias.' } });
   }
 
-  // Convertir las fechas a objetos Date en la zona horaria de Colombia
-  const start = new Date(`${startDate}T00:00:00-05:00`);
-  const end = new Date(`${endDate}T00:00:00-05:00`);
-  const todayDate = new Date(`${today}T00:00:00-05:00`);
-
-  // Calcular la fecha mínima de finalización (3 meses después de la fecha de inicio)
-  const minEndDate = new Date(start);
-  minEndDate.setMonth(minEndDate.getMonth() + 3);
-
-  if (start < todayDate) {
+  // ----------------------------
+  // ✅ NUEVO: comparaciones directas de strings YYYY-MM-DD
+  // Esto evita problemas de timezone en prod
+  if (startDate < today) {
     console.log('Error: Fecha de inicio en el pasado:', startDate);
     return res.status(400).json({ errors: { date: 'La fecha de inicio no puede ser en el pasado.' } });
   }
 
-  if (end < start) {
+  if (endDate < startDate) {
     console.log('Error: Fecha de fin menor a la de inicio:', endDate, startDate);
     return res.status(400).json({ errors: { date: 'Fecha final menor que la de inicio.' } });
   }
- 
-  if (end < minEndDate) {
-    console.log('Error: Duración de la meta menor a 3 meses:', endDate, minEndDate.toISOString().split('T')[0]);
+
+  // Calcular la fecha mínima de finalización (3 meses después de la fecha de inicio)
+  // Aquí sí usamos Date porque necesitamos sumar meses
+  const minEndDate = new Date(startDate); 
+  minEndDate.setMonth(minEndDate.getMonth() + 3);
+
+  // Convertir minEndDate a YYYY-MM-DD para comparación con endDate
+  const minEndDateStr = minEndDate.toISOString().split('T')[0];
+
+  if (endDate < minEndDateStr) {
+    console.log('Error: Duración de la meta menor a 3 meses:', endDate, minEndDateStr);
     return res.status(400).json({ errors: { date: 'La meta debe durar al menos 3 meses.' } });
   }
+  // ----------------------------
 
   if (!unit || unit.trim() === '') {
     console.log('Error: Unidad de la meta vacía');
@@ -92,7 +95,6 @@ export const createGoal = async (req: Request, res: Response): Promise<Response>
       [goal, description, startDate, endDate, unit, currentValue, user.id]
     );
     
-
     const newGoal = result.rows[0];
     return res.status(201).json({ message: 'Meta creada con éxito', goal: newGoal });
 
