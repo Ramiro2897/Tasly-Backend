@@ -12,8 +12,6 @@ export const updateTaskStatus = async (req: Request, res: Response): Promise<Res
     const taskId = req.headers['task-id']; 
     const status = req.headers['status'];
 
-    console.log('actualizar', taskId, status);
-
     // Validamos que el taskId y complete estén presentes
     if (!taskId || typeof status  !== 'string') {
       return res.status(400).json({
@@ -29,6 +27,17 @@ export const updateTaskStatus = async (req: Request, res: Response): Promise<Res
       return res.status(400).json({
         errors: { general: 'Estado no válido.' }
       });
+    }
+
+    // 🔹 Verificar si la tarea ya está completada para no hacer nada
+    const existingTask = await pool.query(
+      'SELECT status FROM tasks WHERE id = $1',
+      [taskId]
+    );
+
+    if (existingTask.rows[0].status === 'completed') {
+      console.log('tarea ya completada');
+      return res.status(400).json({ errors: { general: 'No se puede actualizar una tarea completada.' } });
     }
 
     // Realizamos la actualización en la base de datos

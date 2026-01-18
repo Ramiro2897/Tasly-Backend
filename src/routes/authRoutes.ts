@@ -23,6 +23,7 @@ import { deletePhrase } from '../controllers/deletePhrase';
 import { updatePhrase } from '../controllers/updatePhrase';
 import { updateGoal, advanceGoal } from '../controllers/updateGoal';
 import { updatePhraseFavorite } from '../controllers/updatePhraseFavorite';
+import { autoStartTask } from '../controllers/autoStartTask';
 import { logout } from '../controllers/logout';
 
 
@@ -164,6 +165,12 @@ router.put('/goalAdvance', verifyToken, async (req, res) => {
 // Ruta para actualizar el estado de la frase (favorita)
 router.put('/updateFavorite', verifyToken, async (req, res) => {
   await updatePhraseFavorite(req, res); 
+});
+
+// actualizar tarea en autoamtico
+router.put('/auto-start', verifyToken, async (req, res) => {
+  console.log('entro al actualizar la tarea en automatico');
+  await autoStartTask(req, res); 
 });
 
 export default router;

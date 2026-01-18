@@ -1,93 +1,148 @@
-import { Request, Response } from 'express';
-import { pool } from '../index';  // Importa la conexión desde index.ts
+import { Request, Response } from "express";
+import { pool } from "../index";
 
-export const createTask = async (req: Request, res: Response): Promise<Response> => {
-  const { task, startDate, endDate, category, priority } = req.body;
-  console.log(startDate, endDate, 'datos de fechas que necesitamos...')
+export const createTask = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  const {
+    task,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    category,
+    priority,
+    timeZone, 
+  } = req.body;
 
   // Verificar si el usuario está autenticado
   const user = (req as any).user;
   if (!user) {
-    return res.status(401).json({ errors: { general: "Usuario no autenticado" } });
+    return res
+      .status(401)
+      .json({ errors: { general: "Usuario no autenticado" } });
   }
 
-  // Obtener la fecha actual en formato YYYY-MM-DD
-  const now = new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' });
-  const today = new Date(now).getFullYear() + '-' +
-              String(new Date(now).getMonth() + 1).padStart(2, '0') + '-' +
-              String(new Date(now).getDate()).padStart(2, '0');
+  // 🕒 Hora actual SEGÚN LA ZONA DEL USUARIO
+  const nowUser = new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: timeZone || "UTC", 
+    })
+  );
 
-  console.log(today, 'hora colombiana');
+  const today =
+    nowUser.getFullYear() +
+    "-" +
+    String(nowUser.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(nowUser.getDate()).padStart(2, "0");
 
   // validamos el nombre de la tarea
   if (task.length > 40) {
-    console.log('Nombre de la tarea demasiado largo:', task);
     return res.status(400).json({
-      errors: { task_name: 'Nombre de la tarea muy extenso.' }
+      errors: { task_name: "Nombre de la tarea muy extenso." },
     });
   }
-  
-  // Validaciones de entrada para asegurarse de que los campos sean correctos
-  if (!task || task.trim() === '') {
-    console.log('Datos incompletos - task_name:', task);
+
+  if (!task || task.trim() === "") {
     return res.status(400).json({
-      errors: { task_name: 'El nombre de la tarea no puede estar vacío.' }
+      errors: { task_name: "El nombre de la tarea no puede estar vacío." },
     });
   }
 
   if (!startDate || !endDate) {
-    console.log('Datos incompletos - fechas:', endDate, startDate);
     return res.status(400).json({
-      errors: { date: 'Las fechas de inicio y fin son obligatorias.' }
+      errors: { date: "Las fechas de inicio y fin son obligatorias." },
     });
   }
-  console.log('🛑🛑🛑 DEBUG INICIO PASADO 🛑🛑🛑', { today, startDate });
 
   if (startDate < today) {
-    console.log('Fecha de inicio en el pasado xd:', today);
-    console.log('🛑🛑🛑 DEBUG INICIO PASADO 🛑🛑🛑', { today, startDate });
     return res.status(400).json({
-      errors: { date: 'Fecha de inicio en el pasado cd.', startDate }
+      errors: { date: "Fecha de inicio en el pasado.", startDate },
     });
   }
 
   if (endDate < startDate) {
-    console.log('Fecha de fin menor a la de inicio:', endDate, startDate);
     return res.status(400).json({
-      errors: { date: 'Fecha final menor que la de inicio.' }
+      errors: { date: "Fecha final menor que la de inicio." },
     });
   }
 
-  if (!category || category.trim() === '') {
-    console.log('Datos incompletos - category:', category);
+  // ⏰ Validación de horas (coherencia)
+  if ((startTime && !endTime) || (!startTime && endTime)) {
     return res.status(400).json({
-      errors: { category: 'La categoría de la tarea es obligatoria.' }
+      errors: { time_hour: "Debes ingresar hora de inicio y hora de fin." },
     });
   }
 
-  if (!priority || priority.trim() === '') {
-    console.log('Datos incompletos - priority:', priority);
+  if (startTime && endTime && startTime >= endTime) {
     return res.status(400).json({
-      errors: { priority: 'La prioridad de la tarea es obligatoria.' }
+      errors: {
+        time_hour: "La hora final debe ser mayor que la hora de inicio.",
+      },
+    });
+  }
+
+  // ⏰ VALIDACIÓN CLAVE: hora no puede ser hacia atrás
+  if (startTime && startDate === today) {
+  const taskStartDateTime = new Date(
+    `${startDate}T${startTime}:00`
+  );
+
+  const taskStartInUserTZ = new Date(
+    taskStartDateTime.toLocaleString("en-US", {
+      timeZone: timeZone || "UTC",
+    })
+  );
+
+  if (taskStartInUserTZ < nowUser) {
+    return res.status(400).json({
+      errors: {
+        time_hour:
+          "La hora de inicio no puede ser anterior a la hora actual.",
+      },
+    });
+   }
+  }
+
+  if (!category || category.trim() === "") {
+    return res.status(400).json({
+      errors: { category: "La categoría de la tarea es obligatoria." },
+    });
+  }
+
+  if (!priority || priority.trim() === "") {
+    return res.status(400).json({
+      errors: { priority: "La prioridad de la tarea es obligatoria." },
     });
   }
 
   try {
-    console.log('Paso la validación, guardando tarea...');
-    // Insertamos la nueva tarea en la base de datos
     const result = await pool.query(
-      `INSERT INTO tasks (task_name, start_date, end_date, category, priority, complete, created_at, updated_at, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $7) RETURNING *`,
-      [task, startDate, endDate, category, priority, false, user.id]  // Aquí pasamos el userId como parámetro
+      `INSERT INTO tasks (task_name, start_date, end_date, start_time, end_time, category, priority, complete, created_at, updated_at, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $9) RETURNING *`,
+      [
+        task,
+        startDate,
+        endDate,
+        startTime || null,
+        endTime || null,
+        category,
+        priority,
+        false,
+        user.id,
+      ]
     );
 
-    const newTask = result.rows[0];
-    return res.status(201).json({ message: 'Tarea creada con éxito', task: newTask });
-
+    return res.status(201).json({
+      message: "Tarea creada con éxito",
+      task: result.rows[0],
+    });
   } catch (error) {
-    console.error('Error en la creación de tarea:', error);
+    console.error("Error en la creación de tarea:", error);
     return res.status(500).json({
-      errors: { general: 'Error del servidor, intenta de nuevo más tarde.' }
+      errors: { general: "Error del servidor, intenta de nuevo más tarde." },
     });
   }
 };
