@@ -1,136 +1,92 @@
 import { Request, Response } from "express";
 import { pool } from "../index";
 
-// Función para obtener la hora actual según la zona horaria del usuario
-function getUserNow(timeZone: string): Date {
+// Función para obtener la fecha actual del usuario como string YYYY-MM-DD
+function getTodayString(timeZone: string): string {
   const now = new Date();
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+  }).formatToParts(now);
+
+  const dateObj: Record<string, string> = {};
+  parts.forEach(p => { if (p.type !== "literal") dateObj[p.type] = p.value; });
+
+  return `${dateObj.year}-${dateObj.month}-${dateObj.day}`;
+}
+
+// Función para obtener la hora actual del usuario en minutos desde medianoche
+function getNowInMinutes(timeZone: string): number {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
     hour12: false,
-  });
+  }).formatToParts(now);
 
-  const parts = formatter.formatToParts(now).reduce((acc, part) => {
-    if (part.type !== "literal") acc[part.type] = part.value;
-    return acc;
-  }, {} as Record<string, string>);
+  const timeObj: Record<string, string> = {};
+  parts.forEach(p => { if (p.type !== "literal") timeObj[p.type] = p.value; });
 
-  return new Date(
-    `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
-  );
+  const hours = parseInt(timeObj.hour, 10);
+  const minutes = parseInt(timeObj.minute, 10);
+  return hours * 60 + minutes;
 }
 
 export const createTask = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const {
-    task,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    category,
-    priority,
-    timeZone,
-  } = req.body;
+  const { task, startDate, endDate, startTime, endTime, category, priority, timeZone } = req.body;
 
   console.log("📥 Datos recibidos del cliente:", {
-    task,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    category,
-    priority,
-    timeZone,
+    task, startDate, endDate, startTime, endTime, category, priority, timeZone,
   });
 
-  // Verificar si el usuario está autenticado
+  // Usuario autenticado
   const user = (req as any).user;
-  if (!user) {
-    return res
-      .status(401)
-      .json({ errors: { general: "Usuario no autenticado" } });
-  }
+  if (!user) return res.status(401).json({ errors: { general: "Usuario no autenticado" } });
 
-  // 🕒 Hora actual según la zona del usuario
-  const nowUser = getUserNow(timeZone || "UTC");
-  console.log("🕒 nowUser:", nowUser.toISOString(), "(zona usuario)");
+  // Fecha y hora actuales del usuario
+  const today = getTodayString(timeZone || "UTC");
+  const nowInMinutes = getNowInMinutes(timeZone || "UTC");
 
-  const today = `${nowUser.getFullYear()}-${String(nowUser.getMonth() + 1).padStart(2, "0")}-${String(nowUser.getDate()).padStart(2, "0")}`;
   console.log("📅 today string:", today);
+  console.log("⏱ nowInMinutes:", nowInMinutes);
 
-  // Validación de nombre de tarea
-  if (!task || task.trim() === "") {
-    return res.status(400).json({ errors: { task_name: "El nombre de la tarea no puede estar vacío." } });
-  }
-  if (task.length > 40) {
-    return res.status(400).json({ errors: { task_name: "Nombre de la tarea muy extenso." } });
-  }
+  // Validación nombre tarea
+  if (!task || task.trim() === "") return res.status(400).json({ errors: { task_name: "El nombre de la tarea no puede estar vacío." } });
+  if (task.length > 40) return res.status(400).json({ errors: { task_name: "Nombre de la tarea muy extenso." } });
 
-  // Validación de fechas
-  if (!startDate || !endDate) {
-    return res.status(400).json({ errors: { date: "Las fechas de inicio y fin son obligatorias." } });
-  }
+  // Validación fechas
+  if (!startDate || !endDate) return res.status(400).json({ errors: { date: "Las fechas de inicio y fin son obligatorias." } });
+  console.log("🛑🛑🛑 DEBUG INICIO PASADO 🛑🛑🛑", { today, startDate });
 
-  const startDateObj = new Date(`${startDate}T00:00:00`);
-  const endDateObj = new Date(`${endDate}T23:59:59`);
+  if (startDate < today) return res.status(400).json({ errors: { date: "Fecha de inicio en el pasado.", startDate } });
+  if (endDate < startDate) return res.status(400).json({ errors: { date: "Fecha final menor que la de inicio." } });
 
-  if (startDateObj < nowUser) {
-    return res.status(400).json({ errors: { date: "Fecha de inicio en el pasado.", startDate } });
-  }
-  if (endDateObj < startDateObj) {
-    return res.status(400).json({ errors: { date: "Fecha final menor que la de inicio." } });
-  }
+  // Validación horas
+  if ((startTime && !endTime) || (!startTime && endTime)) return res.status(400).json({ errors: { time_hour: "Debes ingresar hora de inicio y hora de fin." } });
+  if (startTime && endTime && startTime >= endTime) return res.status(400).json({ errors: { time_hour: "La hora final debe ser mayor que la hora de inicio." } });
 
-  // Validación de horas
-  if ((startTime && !endTime) || (!startTime && endTime)) {
-    return res.status(400).json({ errors: { time_hour: "Debes ingresar hora de inicio y hora de fin." } });
-  }
-  if (startTime && endTime && startTime >= endTime) {
-    return res.status(400).json({ errors: { time_hour: "La hora final debe ser mayor que la hora de inicio." } });
-  }
-
-  // Validación: hora no puede ser hacia atrás
   if (startTime) {
-    const [hours, minutes] = startTime.split(":").map(Number);
-    const taskStart = new Date(startDateObj);
-    taskStart.setHours(hours, minutes, 0, 0);
+    const [h, m] = startTime.split(":").map(Number);
+    const taskStartInMinutes = h * 60 + m;
+    console.log("⏱ taskStartInMinutes:", taskStartInMinutes);
 
-    console.log("⏱ taskStart:", taskStart.toISOString());
-    console.log("⏱ nowUser:", nowUser.toISOString());
-
-    if (taskStart < nowUser) {
-      return res.status(400).json({
-        errors: { time_hour: "La hora de inicio no puede ser anterior a la hora actual." },
-      });
+    // Si la tarea es hoy, no puede empezar en el pasado
+    if (startDate === today && taskStartInMinutes < nowInMinutes) {
+      return res.status(400).json({ errors: { time_hour: "La hora de inicio no puede ser anterior a la hora actual." } });
     }
   }
 
   // Validación categoría y prioridad
-  if (!category || category.trim() === "") {
-    return res.status(400).json({ errors: { category: "La categoría de la tarea es obligatoria." } });
-  }
-  if (!priority || priority.trim() === "") {
-    return res.status(400).json({ errors: { priority: "La prioridad de la tarea es obligatoria." } });
-  }
+  if (!category || category.trim() === "") return res.status(400).json({ errors: { category: "La categoría de la tarea es obligatoria." } });
+  if (!priority || priority.trim() === "") return res.status(400).json({ errors: { priority: "La prioridad de la tarea es obligatoria." } });
 
-  console.log("💾 Datos que se van a insertar:", {
-    task,
-    startDate,
-    endDate,
-    startTime,
-    endTime,
-    category,
-    priority,
-    userId: user.id,
-  });
+  console.log("💾 Datos que se van a insertar:", { task, startDate, endDate, startTime, endTime, category, priority, userId: user.id });
 
   try {
     const result = await pool.query(
@@ -140,10 +96,7 @@ export const createTask = async (
       [task, startDate, endDate, startTime || null, endTime || null, category, priority, false, user.id]
     );
 
-    return res.status(201).json({
-      message: "Tarea creada con éxito",
-      task: result.rows[0],
-    });
+    return res.status(201).json({ message: "Tarea creada con éxito", task: result.rows[0] });
   } catch (error) {
     console.error("Error en la creación de tarea:", error);
     return res.status(500).json({ errors: { general: "Error del servidor, intenta de nuevo más tarde." } });
