@@ -16,6 +16,18 @@ export const createTask = async (
     timeZone, 
   } = req.body;
 
+  console.log("📥 Datos recibidos del cliente:", {
+  task,
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  category,
+  priority,
+  timeZone,
+  });
+
+
   // Verificar si el usuario está autenticado
   const user = (req as any).user;
   if (!user) {
@@ -31,12 +43,16 @@ export const createTask = async (
     })
   );
 
+  console.log("🕒 nowUser:", nowUser.toISOString(), " (zona del usuario)");
+
   const today =
     nowUser.getFullYear() +
     "-" +
     String(nowUser.getMonth() + 1).padStart(2, "0") +
     "-" +
     String(nowUser.getDate()).padStart(2, "0");
+
+    console.log("📅 today string:", today);
 
   // validamos el nombre de la tarea
   if (task.length > 40) {
@@ -96,6 +112,10 @@ export const createTask = async (
     })
   );
 
+  console.log("⏱ taskStartDateTime:", taskStartDateTime.toISOString());
+  console.log("⏱ taskStartInUserTZ:", taskStartInUserTZ.toISOString());
+  console.log("⏱ nowUser:", nowUser.toISOString());
+
   if (taskStartInUserTZ < nowUser) {
     return res.status(400).json({
       errors: {
@@ -117,6 +137,16 @@ export const createTask = async (
       errors: { priority: "La prioridad de la tarea es obligatoria." },
     });
   }
+  console.log("💾 Datos que se van a insertar:", {
+  task,
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  category,
+  priority,
+  userId: user.id,
+});
 
   try {
     const result = await pool.query(
