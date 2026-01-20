@@ -43,7 +43,7 @@ export const updateTask = async (req: Request, res: Response): Promise<Response>
 
     // Obtener tarea
     const taskResult: QueryResult = await pool.query(
-      'SELECT status, start_time, end_time FROM tasks WHERE id = $1 AND user_id = $2',
+      'SELECT status, start_date, start_time, end_time FROM tasks WHERE id = $1 AND user_id = $2',
       [taskId, user.id]
     );
     if (taskResult.rows.length === 0) {
@@ -57,6 +57,19 @@ export const updateTask = async (req: Request, res: Response): Promise<Response>
       return res.status(400).json({
         errors: {
           errorUpdate: 'No se puede actualizar una tarea que ya está completada.'
+        }
+      });
+    }
+
+    const startDateOnly = taskData.start_date instanceof Date ? taskData.start_date.toISOString().split('T')[0]
+    : taskData.start_date;
+    const updatedEndDateOnly = updatedDate.split('T')[0];
+      
+    if (updatedEndDateOnly < startDateOnly) {
+      console.log('valido que no se pueda agregar una fecha final menor que la inicial')
+      return res.status(400).json({
+        errors: {
+          errorUpdate: 'La fecha final no puede ser anterior a la fecha de inicio de la tarea.'
         }
       });
     }
