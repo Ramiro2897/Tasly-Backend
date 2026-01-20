@@ -36,15 +36,16 @@ export const updateTask = async (req: Request, res: Response): Promise<Response>
     const { updatedDate, updatedStartTime, updatedEndTime, updatedPriority, timeZone } = req.body;
     const taskId = Number(req.body.taskId);
 
+    console.log(updatedDate, updatedStartTime, updatedEndTime, updatedPriority, timeZone, 'lo que llega')
     if (!taskId || !updatedDate || !updatedPriority) {
       return res.status(400).json({ errors: { errorUpdate: 'Faltan datos para actualizar la tarea.' } });
     }
 
     const nowUser = getUserNow(timeZone || "UTC");
-    console.log('⏱ nowUser:', nowUser.toISOString());
+    // console.log('⏱ nowUser:', nowUser.toISOString());
 
     const todayStr = `${nowUser.getFullYear()}-${String(nowUser.getMonth()+1).padStart(2,"0")}-${String(nowUser.getDate()).padStart(2,"0")}`;
-    console.log('📅 today string:', todayStr);
+    // console.log('📅 today string:', todayStr);
 
     // Validación de fecha
     if (updatedDate < todayStr) {
@@ -71,14 +72,38 @@ export const updateTask = async (req: Request, res: Response): Promise<Response>
     }
     const taskData = taskResult.rows[0];
 
+    //Si la tarea ya está completada, no se permite actualizar
+    if (taskData.status === 'completed') {
+      console.log('no se puede actualizar una tarea completa')
+      return res.status(400).json({
+        errors: {
+          errorUpdate: 'No se puede actualizar una tarea que ya está completada.'
+        }
+      });
+    }
+
+    console.log(taskData.start_time, taskData.end_time, 'son nulos?')
+
+    const hasUpdatedStart =
+    updatedStartTime !== null && updatedStartTime !== undefined && updatedStartTime !== '';
+
+    const hasUpdatedEnd =
+    updatedEndTime !== null && updatedEndTime !== undefined && updatedEndTime !== '';
+
     // Validación de seguridad: no agregar horas si la tarea original no tiene
-    if ((taskData.start_time === null || taskData.end_time === null) &&
-        (updatedStartTime || updatedEndTime)) {
-      return res.status(400).json({ errors: { errorUpdate: 'No puedes agregar horas a una tarea que fue creada sin ellas.' } });
+    if (
+      (taskData.start_time === null || taskData.end_time === null) &&
+      (hasUpdatedStart || hasUpdatedEnd)
+    ) {
+      return res.status(400).json({
+        errors: {
+          errorUpdate: 'No puedes agregar horas a una tarea que fue creada sin ellas.'
+        }
+      });
     }
 
     const updatedDateOnly = updatedDate.split('T')[0];
-    console.log(updatedStartTime, updatedEndTime, updatedDateOnly, todayStr, 'valores debug');
+    // console.log(updatedStartTime, updatedEndTime, updatedDateOnly, todayStr, 'valores debug');
 
     // 🔹 Validaciones de hora
     if (taskData.status === 'in_progress') {
