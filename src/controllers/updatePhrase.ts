@@ -11,27 +11,15 @@ export const updatePhrase = async (req: Request, res: Response): Promise<Respons
     }
 
     // 🔹 Extraemos los datos del cuerpo de la petición
-    const { phraseId, editedName } = req.body;
+    const { phraseId, editedName, createdAt, timezone } = req.body;
     console.log('datos de la frase', phraseId, editedName);
 
     // 🔹 Validación de datos requeridos
-    if (!phraseId || !editedName) {
+    if (!phraseId || !editedName || !createdAt || !timezone) {
       return res.status(400).json({
-        errors: { errorUpdate: 'Faltan datos para actualizar la frase.' }
+        errors: { errorUpdate: 'Faltan datos' }
       });
     }
-
-    // 🔹 Validación de fecha (convertimos `updatedDate` al mismo formato para evitar errores)
-    const date = new Date();
-    const today = new Intl.DateTimeFormat('es-CO', {
-      timeZone: 'America/Bogota',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(date).split('/').reverse().join('-');
-
-    
-    console.log('fecha actual colombiana', today);
 
     // 🔹 Verificamos si la frase pertenece al usuario
     const phraseResult: QueryResult = await pool.query(
@@ -43,17 +31,17 @@ export const updatePhrase = async (req: Request, res: Response): Promise<Respons
       return res.status(404).json({ errors: { errorUpdate: 'La frase no pertenece al usuario.' } });
     }
 
-    // 🔹 Actualización de la frase
+    // 🔹 Actualización de la frase usando la fecha y zona del usuario
     const updateResult: QueryResult = await pool.query(
       `
       UPDATE phrases
       SET 
         phrase = $1,
-        created_at = CURRENT_TIMESTAMP
-      WHERE id = $2 AND user_id = $3
+        created_at = $3
+      WHERE id = $2 AND user_id = $4
       RETURNING *
       `,
-      [editedName, phraseId, user.id]
+      [editedName, phraseId, createdAt, user.id]
     );
 
     // 🔹 Verificamos si se actualizó correctamente
