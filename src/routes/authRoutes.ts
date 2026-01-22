@@ -71,7 +71,7 @@ router.get('/tasklist', verifyToken, async (req, res) => {
 });
 
 // ruta para hacer la consulta de la longitud de tareas 
-router.get('/tasklistAll', verifyToken, async (req, res) => {
+router.post('/tasklistAll', verifyToken, async (req, res) => {
   // console.log('entro aqui al hacer la consulta de las tareas...');
   await getDailyTasksSummary(req, res); 
 });

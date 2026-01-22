@@ -33,7 +33,14 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
       return res.status(401).json({ errors: { general: "Usuario no autenticado" } });
     }
 
-    const result = await pool.query(
+    const { date } = req.body;
+    if (!date) {
+      return res.status(400).json({ errors: { general: "Falta la fecha para filtrar tareas" } });
+    }
+    console.log("Fecha recibida para filtrar tareas:", date);
+
+    // 2️⃣ Consulta resumen de tareas
+    const summaryResult = await pool.query(
       `
       SELECT
         COUNT(*) AS total,
@@ -43,12 +50,13 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
       FROM tasks
       WHERE user_id = $1
         AND archived = false
-        AND start_date <= CURRENT_DATE
-        AND end_date >= CURRENT_DATE;
+        AND start_date <= $2
+        AND end_date >= $2;
       `,
-      [user.id]
+      [user.id, date]
     );
 
+     // 3️⃣ Consulta tareas con horas
     const timeTasksResult = await pool.query(
       `
       SELECT
@@ -62,13 +70,13 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
         AND archived = false
         AND start_time IS NOT NULL
         AND end_time IS NOT NULL
-        AND start_date <= CURRENT_DATE
-        AND end_date >= CURRENT_DATE;
+        AND start_date <= $2
+        AND end_date >= $2;
       `,
-      [user.id]
+      [user.id, date]
     );
 
-    const summary = result.rows[0];
+    const summary = summaryResult.rows[0];
     console.log('objeto summary', summary)
     console.log('las horas', timeTasksResult.rows);
 
