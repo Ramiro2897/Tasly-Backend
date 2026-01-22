@@ -39,7 +39,7 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
     }
     console.log("Fecha recibida para filtrar tareas:", date);
 
-    // 2️⃣ Consulta resumen de tareas
+    // 2 Consulta resumen de tareas
     const summaryResult = await pool.query(
       `
       SELECT
@@ -56,7 +56,7 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
       [user.id, date]
     );
 
-     // 3️⃣ Consulta tareas con horas
+     // 3️ Consulta tareas con horas
     const timeTasksResult = await pool.query(
       `
       SELECT

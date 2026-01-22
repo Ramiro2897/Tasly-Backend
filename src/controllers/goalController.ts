@@ -60,7 +60,7 @@ export const createGoal = async (req: Request, res: Response): Promise<Response>
   }
 
   // ----------------------------
-  // ✅ NUEVO: comparaciones directas de strings YYYY-MM-DD
+  // NUEVO: comparaciones directas de strings YYYY-MM-DD
   // Esto evita problemas de timezone en prod
   if (startDate < today) {
     console.log('Error: Fecha de inicio en el pasado:', startDate, today);

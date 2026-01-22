@@ -45,7 +45,7 @@ export const updateGoal = async (req: Request, res: Response): Promise<Response>
     });
 
   } catch (error) {
-    console.error('💥 Error al actualizar la meta:', error);
+    console.error('Error al actualizar la meta:', error);
     return res.status(500).json({
       errors: { errorUpdate: 'Error al actualizar la meta.' }
     });

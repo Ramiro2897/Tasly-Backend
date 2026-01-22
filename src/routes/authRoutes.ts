@@ -41,50 +41,42 @@ router.post('/login', async (req, res) => {
 
 // ruta para cerrar sesion
 router.post('/logout', verifyToken, async (req, res) => {
-  console.log('cierra sesion')
   await logout(req, res)
 });
 
 // Ruta para la creación de tareas (se añade dentro de authRoutes)
 router.post('/task', verifyToken, async (req, res) => {
-  console.log('paso por aqui');
   await createTask(req, res); 
 });
 
 // Ruta para la creación de tareas (se añade dentro de authRoutes)
 router.post('/phrase', verifyToken, async (req, res) => {
-  console.log('entro aqui al crear la frase');
   await createPhrase(req, res);
 });
 
 // ruta para la creacion de metas...
 router.post('/goals', verifyToken, async (req, res) => {
-  console.log('entro aqui al crear una meta');
   await createGoal(req, res);
   // await createPhrase(req, res);
 });
 
 // ruta para hacer la consulta de la ultima tarea de dicho usuario
 router.get('/tasklist', verifyToken, async (req, res) => {
-  // console.log('entro aqui al hacer la consulta de las tareas...');
   await getTasks(req, res); 
 });
 
 // ruta para hacer la consulta de la longitud de tareas 
 router.post('/tasklistAll', verifyToken, async (req, res) => {
-  // console.log('entro aqui al hacer la consulta de las tareas...');
   await getDailyTasksSummary(req, res); 
 });
 
 // ruta para hacer la consulta a las tareas de dicho usuario
 router.get('/phraseslist', verifyToken, async (req, res) => {
-  // console.log('entro aqui al hacer la consulta de las frases...');
   await getPhrases(req, res); 
 });
 
 // ruta para hacer la consulta a las metas de dicho usuario
 router.get('/goallist', verifyToken, async (req, res) => {
-  // console.log('entro aqui al hacer la consulta de las Metas...');
   await getGoals(req, res); 
 });
 
@@ -141,19 +133,16 @@ router.get('/loadGoals', verifyToken, async (req, res) => {
 
 // Ruta para eliminar una frase
 router.delete('/deletePhrase', verifyToken, async (req, res) => {
-  console.log('eliminando frase');
   await deletePhrase(req, res); 
 });
 
 // ruta para actualizar una tarea
 router.put('/phraseUpdate', verifyToken, async (req, res) => {
-  console.log('entra al actualizar frase');
   await updatePhrase(req, res);
 });
 
 // ruta para agregar nota en una meta
 router.put('/goalUpdate', verifyToken, async (req, res) => {
-  // console.log('entra al agregar nota meta');
   await updateGoal(req, res); 
 });
 
@@ -169,7 +158,6 @@ router.put('/updateFavorite', verifyToken, async (req, res) => {
 
 // actualizar tarea en autoamtico
 router.put('/auto-start', verifyToken, async (req, res) => {
-  console.log('entro al actualizar la tarea en automatico');
   await autoStartTask(req, res); 
 });
 

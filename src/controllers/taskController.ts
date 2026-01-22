@@ -41,10 +41,6 @@ export const createTask = async (
 ): Promise<Response> => {
   const { task, startDate, endDate, startTime, endTime, category, priority, timeZone } = req.body;
 
-  console.log("📥 Datos recibidos del cliente:", {
-    task, startDate, endDate, startTime, endTime, category, priority, timeZone,
-  });
-
   // Usuario autenticado
   const user = (req as any).user;
   if (!user) return res.status(401).json({ errors: { general: "Usuario no autenticado" } });
@@ -53,16 +49,12 @@ export const createTask = async (
   const today = getTodayString(timeZone || "UTC");
   const nowInMinutes = getNowInMinutes(timeZone || "UTC");
 
-  console.log("📅 today string:", today);
-  console.log("⏱ nowInMinutes:", nowInMinutes);
-
   // Validación nombre tarea
   if (!task || task.trim() === "") return res.status(400).json({ errors: { task_name: "El nombre de la tarea no puede estar vacío." } });
   if (task.length > 40) return res.status(400).json({ errors: { task_name: "Nombre de la tarea muy extenso." } });
 
   // Validación fechas
   if (!startDate || !endDate) return res.status(400).json({ errors: { date: "Las fechas de inicio y fin son obligatorias." } });
-  console.log("🛑🛑🛑 DEBUG INICIO PASADO 🛑🛑🛑", { today, startDate });
 
   if (startDate < today) return res.status(400).json({ errors: { date: "Fecha de inicio en el pasado.", startDate } });
   if (endDate < startDate) return res.status(400).json({ errors: { date: "Fecha final menor que la de inicio." } });
@@ -74,7 +66,6 @@ export const createTask = async (
   if (startTime) {
     const [h, m] = startTime.split(":").map(Number);
     const taskStartInMinutes = h * 60 + m;
-    console.log("⏱ taskStartInMinutes:", taskStartInMinutes);
 
     // Si la tarea es hoy, no puede empezar en el pasado
     if (startDate === today && taskStartInMinutes < nowInMinutes) {
@@ -86,7 +77,6 @@ export const createTask = async (
   if (!category || category.trim() === "") return res.status(400).json({ errors: { category: "La categoría de la tarea es obligatoria." } });
   if (!priority || priority.trim() === "") return res.status(400).json({ errors: { priority: "La prioridad de la tarea es obligatoria." } });
 
-  console.log("💾 Datos que se van a insertar:", { task, startDate, endDate, startTime, endTime, category, priority, userId: user.id });
 
   try {
     const result = await pool.query(

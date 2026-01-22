@@ -54,7 +54,7 @@ export const updatePhrase = async (req: Request, res: Response): Promise<Respons
     });
 
   } catch (error) {
-    console.error('💥 Error al actualizar la frase:', error);
+    console.error('Error al actualizar la frase:', error);
     return res.status(500).json({
       errors: { errorUpdate: 'Error al actualizar la frase.' }
     });
