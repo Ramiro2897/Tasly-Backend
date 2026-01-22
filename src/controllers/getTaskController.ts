@@ -43,8 +43,27 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
       FROM tasks
       WHERE user_id = $1
         AND archived = false
-        AND start_date <= (NOW() AT TIME ZONE 'America/Bogota')::date
-        AND end_date >= (NOW() AT TIME ZONE 'America/Bogota')::date;
+        AND start_date <= CURRENT_DATE
+        AND end_date >= CURRENT_DATE;
+      `,
+      [user.id]
+    );
+
+    const timeTasksResult = await pool.query(
+      `
+      SELECT
+        id,
+        task_name AS "taskName",
+        status,
+        (start_date + start_time) AS "startDateTime",
+        (end_date + end_time) AS "endDateTime"
+      FROM tasks
+      WHERE user_id = $1
+        AND archived = false
+        AND start_time IS NOT NULL
+        AND end_time IS NOT NULL
+        AND start_date <= CURRENT_DATE
+        AND end_date >= CURRENT_DATE;
       `,
       [user.id]
     );
@@ -57,6 +76,9 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
       pending: Number(summary.pending),
       inProgress: Number(summary.in_progress),
       completed: Number(summary.completed),
+
+      // bloque SOLO para horas
+      timeTasks: timeTasksResult.rows,
     });
   } catch (error) {
     console.error(error);
