@@ -25,7 +25,7 @@ import { updateGoal, advanceGoal } from '../controllers/updateGoal';
 import { updatePhraseFavorite } from '../controllers/updatePhraseFavorite';
 import { autoStartTask } from '../controllers/autoStartTask';
 import { logout } from '../controllers/logout';
-import { checkUpcomingTasks } from "../controllers/reminders";
+import { checkDailyPendingTasks } from "../controllers/reminders";
 
 const router = express.Router();
 
@@ -164,7 +164,7 @@ router.put('/auto-start', verifyToken, async (req, res) => {
 // notificar al usuario haha
 router.post('/check', async (req, res) => {
   console.log('entro accaaaa')
-  await checkUpcomingTasks(req, res); 
+  await checkDailyPendingTasks(req, res); 
 });
 
 export default router;

@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
-import { getUpcomingTask } from "../services/taskReminder.service";
 import { pool } from "../index";
 
-export const checkUpcomingTasks = async (
+export const checkDailyPendingTasks = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
   try {
-    console.log("⏰ checkUpcomingTasks ejecutándose");
+    console.log("⏰ checkDailyPendingTasks ejecutándose");
 
     const today = new Date().toISOString().slice(0, 10);
     console.log("📅 Fecha hoy:", today);
@@ -35,11 +34,10 @@ export const checkUpcomingTasks = async (
 
     if (result.rows.length === 0) {
       console.log("😴 No hay tareas hoy");
-      return res.send("ok");
+      return res.json({ message: "No hay tareas hoy", data: {} });
     }
 
     const tasksByUser: Record<number, any[]> = {};
-
     for (const task of result.rows) {
       if (!tasksByUser[task.user_id]) {
         tasksByUser[task.user_id] = [];
@@ -47,25 +45,33 @@ export const checkUpcomingTasks = async (
       tasksByUser[task.user_id].push(task);
     }
 
-    console.log("👥 Usuarios con tareas:", Object.keys(tasksByUser).length);
+    console.log("👥 Usuarios con tareas hoy:", Object.keys(tasksByUser).length);
+
+    // Crear un objeto resumen para devolver al cliente
+    const summary: Record<string, { pending: number; total: number }> = {};
 
     for (const userId in tasksByUser) {
-      console.log(`🔍 Revisando usuario ${userId}`);
+      const userTasks = tasksByUser[userId];
+      const pendingCount = userTasks.filter(t => t.status === "pending").length;
+      summary[userId] = {
+        pending: pendingCount,
+        total: userTasks.length,
+      };
 
-      const upcoming = getUpcomingTask(tasksByUser[userId]);
-
-      if (upcoming) {
-        console.log(
-          `🔔 NOTIFICAR usuario ${userId} → ${upcoming.taskName}`
-        );
+      if (pendingCount > 0) {
+        console.log(`🔔 Usuario ${userId} → ${pendingCount} tareas pendientes hoy`);
       } else {
-        console.log(`🟢 Usuario ${userId} sin tareas próximas`);
+        console.log(`🟢 Usuario ${userId} → No tienes tareas pendientes hoy`);
       }
     }
 
-    return res.send("ok");
+    // ✅ Devuelve el resumen al cliente
+    return res.json({
+      message: "Resumen de tareas pendientes por usuario",
+      data: summary,
+    });
   } catch (error) {
-    console.error("❌ Error en checkUpcomingTasks:", error);
-    return res.status(500).send("error");
+    console.error("❌ Error en checkDailyPendingTasks:", error);
+    return res.status(500).json({ message: "Error al obtener tareas pendientes" });
   }
 };
