@@ -63,8 +63,8 @@ export const getDailyTasksSummary = async (req: Request, res: Response): Promise
         id,
         task_name AS "taskName",
         status,
-        (start_date + start_time) AS "startDateTime",
-        (end_date + end_time) AS "endDateTime"
+        start_time AS "startDateTime",
+        end_time   AS "endDateTime"
       FROM tasks
       WHERE user_id = $1
         AND archived = false
