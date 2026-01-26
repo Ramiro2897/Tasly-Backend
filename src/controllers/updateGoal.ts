@@ -63,7 +63,7 @@ export const advanceGoal = async (req: Request, res: Response) => {
     const numericValue = Number(newValue);
 
     if (isNaN(numericValue) || numericValue < 1 || numericValue > 100) {
-      return res.status(400).json({ errors: { errorUpdate: "Ingreso u valor de 1 a 100" } });
+      return res.status(400).json({ errors: { errorUpdate: "Ingrese un valor de 1 a 100" } });
     }
 
     // Obtener el valor actual y la fecha de finalización de la meta
